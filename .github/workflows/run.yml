@@ -14,6 +14,9 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
     - uses: actions/checkout@v4
     - name: Install dependencies
@@ -44,6 +47,10 @@ jobs:
         export LANGUAGE="${{ vars.LANGUAGE }}"
         export CATEGORIES="${{ vars.CATEGORIES }}"
         export MODEL_NAME="${{ vars.MODEL_NAME }}"
+        : "${LANGUAGE:=zh}"
+        : "${CATEGORIES:=cs.AI,cs.CL,cs.LG}"
+        : "${MODEL_NAME:=deepseek-chat}"
+        export LANGUAGE CATEGORIES MODEL_NAME
         
         # 使用Scrapy爬取
         # Use Scrapy to crawl
