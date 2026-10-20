@@ -126,8 +126,11 @@ def process_single_item(chain, item: Dict, language: str) -> Dict:
         item['AI'] = {**default_ai_fields, **partial_data}
         print(f"Using partial AI data for {item.get('id', 'unknown')}: {list(partial_data.keys())}", file=sys.stderr)
     except Exception as e:
+        # 单篇失败降级为占位内容,不再让整批挂掉。
+        # 上游曾因此 462 篇全挂 -> RuntimeError -> exit 1 -> 当天数据全丢。
         print(f"Unexpected error for {item.get('id', 'unknown')}: {e}", file=sys.stderr)
-        raise RuntimeError(f"AI request failed for {item.get('id', 'unknown')}") from e
+        item['AI'] = dict(default_ai_fields)
+        item['_ai_failed'] = True
     
     # Final validation to ensure all required fields exist
     for field in default_ai_fields.keys():
@@ -183,8 +186,18 @@ def process_all_items(data: List[Dict], model_name: str, language: str, max_work
                 print(f"Item at index {idx} generated an exception: {e}", file=sys.stderr)
                 processing_errors.append(str(e))
 
-    raise_if_processing_failed(processing_errors)
-    
+    # 只有大面积失败才判定致命;零星失败用占位内容兜底,保住当天数据
+    total = len(data)
+    if processing_errors and total and len(processing_errors) > total * 0.5:
+        raise_if_processing_failed(processing_errors)
+    elif processing_errors:
+        print(f"{len(processing_errors)}/{total} 篇失败,未达致命阈值,继续提交",
+              file=sys.stderr)
+    failed_ai = sum(1 for it in processed_data if it and it.get('_ai_failed'))
+    if failed_ai:
+        print(f"注意: {failed_ai}/{total} 篇的 AI 增强是占位内容",
+              file=sys.stderr)
+
     return processed_data
 
 def main():
