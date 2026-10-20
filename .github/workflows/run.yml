@@ -51,10 +51,8 @@ jobs:
         : "${CATEGORIES:=cs.AI,cs.CL,cs.LG}"
         : "${MODEL_NAME:=deepseek-chat}"
         export LANGUAGE CATEGORIES MODEL_NAME
-        : "${LANGUAGE:=zh}"
-        : "${CATEGORIES:=cs.AI,cs.CL,cs.LG}"
-        : "${MODEL_NAME:=deepseek-chat}"
-        export LANGUAGE CATEGORIES MODEL_NAME
+        # 厂商特有的额外请求体(比如关 thinking 模式),JSON 字符串
+        export LLM_EXTRA_BODY="${{ vars.LLM_EXTRA_BODY }}"
         
         # 使用Scrapy爬取
         # Use Scrapy to crawl
